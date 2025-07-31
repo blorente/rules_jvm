@@ -20,8 +20,20 @@ var javaparserDeployJar []byte
 // If this variable or JAVA_HOME are set, the javaparser server will start under that installation of java.
 const GazelleJavaBinEnvVar = "GAZELLE_JAVA_JAVAHOME"
 
+func javaparserJarPath(tmpdir string) string {
+	return filepath.Join(tmpdir, "javaparser.jar")
+}
+
+func javaparserRunnerPath(tmpdir string) string {
+	path := filepath.Join(tmpdir, "runjavaparser")
+	if runtime.GOOS == "windows" {
+		path += ".bat"
+	}
+	return path
+}
+
 func materializeJavaparser(tmpdir string) (string, error) {
-	jarPath := filepath.Join(tmpdir, "javaparser.jar")
+	jarPath := javaparserJarPath(tmpdir)
 	err := os.WriteFile(jarPath, javaparserDeployJar, 0644)
 	if err != nil {
 		return "", err
@@ -43,11 +55,10 @@ endlocal
 `
 
 func createRunner(javaparserLocation string, jvmFlags []string, tmpdir string) (string, error) {
-	runnerPath := filepath.Join(tmpdir, "runjavaparser")
-	runnerTemplate := unixRunerTemplate
+	runnerPath := javaparserRunnerPath(tmpdir)
 
+	runnerTemplate := unixRunerTemplate
 	if runtime.GOOS == "windows" {
-		runnerPath += ".bat"
 		runnerTemplate = windowsRunnerTemplate
 	}
 
@@ -82,5 +93,22 @@ func (m *ServerManager) locateJavaparser(jvmFlags []string) (string, error) {
 }
 
 func (m *ServerManager) startupFlags(jvmFlags []string) []string {
+	// The startup flags are baked into the embedded runner script.
 	return []string{}
+}
+
+func (m *ServerManager) cleanupServerFiles() error {
+	serverPath := javaparserJarPath(m.tmpdir)
+	err := os.Remove(serverPath)
+	if err != nil {
+		return err
+	}
+
+	runnerPath := javaparserJarPath(m.tmpdir)
+	err = os.Remove(runnerPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

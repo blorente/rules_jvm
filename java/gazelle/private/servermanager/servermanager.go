@@ -127,12 +127,15 @@ func readPort(path string) (int32, error) {
 	}
 }
 
-func (m *ServerManager) Shutdown() {
+func (m *ServerManager) Shutdown() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	// We still want the full shutdown cycle to run before returning the error, as the errors are mostly informative anyway.
+	err := m.cleanupServerFiles()
+
 	if m.conn == nil {
-		return
+		return err
 	}
 
 	cc := pb.NewLifecycleClient(m.conn)
@@ -143,4 +146,5 @@ func (m *ServerManager) Shutdown() {
 	m.conn.Close()
 
 	m.conn = nil
+	return err
 }

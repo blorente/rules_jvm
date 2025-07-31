@@ -35,3 +35,8 @@ func (m *ServerManager) startupFlags(jvmFlags []string) []string {
 	}
 	return formattedFlags
 }
+
+func (m *ServerManager) cleanupServerFiles() error {
+	// Intentionally empty, nothing to do here.
+	return nil
+}

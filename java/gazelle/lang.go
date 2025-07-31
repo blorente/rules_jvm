@@ -221,7 +221,10 @@ func (l javaLang) Fix(c *config.Config, f *rule.File) {
 }
 
 func (l javaLang) DoneGeneratingRules() {
-	l.parser.ServerManager().Shutdown()
+	err := l.parser.ServerManager().Shutdown()
+	if err != nil {
+		l.logger.Error().Err(err).Msg("error shutting down server")
+	}
 	l.javaExportIndex.FinalizeIndex()
 }
 
@@ -242,5 +245,5 @@ func (s shutdownServerOnFatalLogHook) Run(e *zerolog.Event, level zerolog.Level,
 	if level != zerolog.FatalLevel {
 		return
 	}
-	s.l.parser.ServerManager().Shutdown()
+	_ = s.l.parser.ServerManager().Shutdown() // There is nothing to do with errors here, as we don't have a full logger.
 }
